@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專業跑馬仔計分器 V8.4</title>
+    <title>專業跑馬仔計分器 V8.7</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1b5e20">
@@ -83,7 +83,7 @@
         .score-pos { color: var(--win); }
         .score-neg { color: var(--lose); }
 
-        .main-actions { display: flex; gap: 8px; margin-top: 6px; }
+        .main-actions { display: flex; gap: 8px; margin-top: 10px; }
         .sq-btn {
             flex: 1; aspect-ratio: 1; border-radius: 12px; font-size: 1.4em; font-weight: bold;
             display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
@@ -263,14 +263,14 @@
 </nav>
 
 <script>
-    // 🔴 雲端連線設定（連線失敗亦能 100% 降級為本地運行，不影響單機）
+    // 🔴 雲端連線設定 (記得在這裡填入您 Firebase 的真實設定，否則將自動運行「單機模式」)
     const MY_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAT2VSkPd33r7ZphPt7OvL-2aguQCzayAg",
-  authDomain: "mj-score-kevinckc.firebaseapp.com",
-  projectId: "mj-score-kevinckc",
-  storageBucket: "mj-score-kevinckc.firebasestorage.app",
-  messagingSenderId: "931414887918",
-  appId: "1:931414887918:web:894172b7e3912fd326d2ff"
+          apiKey: "AIzaSyAT2VSkPd33r7ZphPt7OvL-2aguQCzayAg",
+          authDomain: "mj-score-kevinckc.firebaseapp.com",
+          projectId: "mj-score-kevinckc",
+          storageBucket: "mj-score-kevinckc.firebasestorage.app",
+          messagingSenderId: "931414887918",
+          appId: "1:931414887918:web:894172b7e3912fd326d2ff"
     };
 
     let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MY_FIREBASE_CONFIG;
@@ -281,7 +281,7 @@
     let currentRoomId = localStorage.getItem('mj_room_id') || '';
     let firebaseSupported = (typeof firebase !== 'undefined');
 
-    const emojiList = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐒','🦍','🦧','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🦓','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐈‍⬛','🐓','🦃','🦚','🦜','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'];
+    const emojiList = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐒','🦍','🦧','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','裝','🐊','🐅','🦓','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐈‍⬛','🐓','🦃','🦚','🦜','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'];
 
     let players = JSON.parse(localStorage.getItem('mj_players')) || [
         { id: 0, name: "玩家 1", score: 0, wind: "東", emoji: "🐶", stats: { win: 0, selfDraw: 0, discard: 0, kong: 0 } },
@@ -298,6 +298,46 @@
     let history = JSON.parse(localStorage.getItem('mj_history')) || [];
     let currentWinnerId = null, currentKongPlayerId = null, currentEmojiPlayerId = null; 
     let shuffledWinds = [], pickingIndex = 0, isShuffling = false;
+
+    // 解決 Emoji 與中文字元相容性問題的無損 Base64 編解碼器
+    function utf8ToBase64(str) {
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+            return String.fromCharCode('0x' + p1);
+        }));
+    }
+
+    function base64ToUtf8(str) {
+        try {
+            return decodeURIComponent(atob(str).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        } catch(e) {
+            return null;
+        }
+    }
+
+    // 強效相容性剪貼簿複製
+    function copyToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; 
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (successful) return true;
+        } catch (err) {
+            document.body.removeChild(textArea);
+        }
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text);
+            return true;
+        }
+        return false;
+    }
 
     // --- 全域 UI 視圖管理 ---
     function showView(viewName) {
@@ -395,7 +435,7 @@
                 if(err.code === 'unavailable') {
                     alert("連線失敗 (no available server)！請確保已在 Firebase Console 中按下「Create Database (建立資料庫)」並設定為「Test Mode」。");
                 } else if(err.code === 'permission-denied') {
-                    alert("權限不足！請確保 Firestore Database 的 Rules 設定為允許讀寫 (Test mode)。");
+                    alert("權限不足！請確保 Firestore Database 的 Rules 設定為允許讀寫 (Test mode).");
                 } else {
                     alert("連線發生錯誤：" + err.message);
                 }
@@ -473,6 +513,7 @@
                     if(p) changesHtml += `<span class="change-badge" style="color:${val > 0 ? 'var(--win)' : 'var(--lose)'}">${p.emoji} ${val > 0 ? '+' : ''}${val}</span>`;
                 }
             });
+            changesHtml += '</div>'; 
             return `<div class="log-item"><div class="log-desc"><b>${item.desc}</b><br><small style="color: #888; font-size: 0.85em;">${item.time}</small>${changesHtml}</div><button class="undo-btn" onclick="undo(${history.length - 1 - idx})">撤銷</button></div>`;
         }).join('');
     }
@@ -498,6 +539,45 @@
         document.getElementById('set-fullWrap').checked = config.fullWrap;
         document.getElementById('set-kongExp').checked = config.kongExp;
         document.getElementById('set-voice').checked = config.voiceEnabled;
+    }
+
+    function exportData() {
+        const allData = { players, config, sessions, history };
+        const code = utf8ToBase64(JSON.stringify(allData));
+        
+        if (copyToClipboard(code)) {
+            alert("✅ 同步代碼已成功複製到剪貼簿！請去 WhatsApp 貼上分享給朋友。");
+        } else {
+            document.getElementById('syncDataInput').value = code;
+            document.getElementById('syncDataInput').select();
+            alert("📋 由於瀏覽器限制，無法自動複製。已將備份代碼自動填入下方的文字框中，請手動複製該代碼！");
+        }
+    }
+
+    function importData() {
+        const code = document.getElementById('syncDataInput').value.trim();
+        if(!code) return alert("請先貼上代碼。");
+        try {
+            const jsonString = base64ToUtf8(code);
+            if (!jsonString) throw new Error("Decode failed");
+            
+            const decodedData = JSON.parse(jsonString);
+            
+            if (!decodedData.players || !Array.isArray(decodedData.players)) {
+                throw new Error("Invalid structure");
+            }
+
+            if(confirm("⚠ 匯入代碼會覆蓋你部機而家嘅所有紀錄，確定嗎？")) {
+                players = decodedData.players; 
+                config = decodedData.config || config;
+                sessions = decodedData.sessions || []; 
+                history = decodedData.history || [];
+                saveData(); 
+                location.reload();
+            }
+        } catch(e) { 
+            alert("❌ 代碼錯誤！解碼失敗，請確認是否完整複製了代碼。"); 
+        }
     }
 
     function startShuffle() {
@@ -570,14 +650,20 @@
         players.forEach(x => { if(x.id === winner.id) change[x.id] = amount; else if(x.id === loser.id) change[x.id] = -amount; else change[x.id] = 0; });
         const statUpdates = [{id: winner.id, type: 'kong', val: 1}];
         applyChange(change, `${winner.emoji} ${winner.name} 明槓 (${loser.emoji} ${loser.name} 打出)`, statUpdates);
-        speak(`銀牙！${winner.name}，明槓`); closeModal('mingModal');
+        
+        // 🔊 移除「銀牙！」字眼，直接讀出名字與動作
+        speak(`${winner.name}，明槓`); 
+        closeModal('mingModal');
     }
 
     function handleEvent(pid, type) {
         const change = {}; let statUpdates = []; const p = players.find(x => x.id === pid); let amount = 0, name = "", speechText = "";
         if(type==='zhui') { amount = config.zhui; players.forEach(x => { if(x.id===pid) change[x.id] = -(amount*3); else change[x.id] = amount; }); name = "被追"; speechText = `${p.name}，被追`; } 
         else {
-            if(type==='an') { amount = config.an; name = "暗槓"; speechText = `銀牙！${p.name}，暗槓`; } else if(type==='jia') { amount = config.jia; name = "加槓"; speechText = `銀牙！${p.name}，加槓`; }
+            // 🔊 移除「銀牙！」字眼，直接讀出名字與動作
+            if(type==='an') { amount = config.an; name = "暗槓"; speechText = `${p.name}，暗槓`; } 
+            else if(type==='jia') { amount = config.jia; name = "加槓"; speechText = `${p.name}，加槓`; }
+            
             players.forEach(x => { if(x.id===pid) change[x.id] = amount*3; else change[x.id] = -amount; }); statUpdates.push({id: pid, type: 'kong', val: 1});
         }
         applyChange(change, `${p.emoji} ${p.name} ${name}`, statUpdates); speak(speechText);
