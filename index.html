@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>專業跑馬仔計分器 V8.0</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1b5e20">
+    <link rel="apple-touch-icon" href="./icon.png">
+
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-dark: #1b5e20;
+            --accent: #ffd54f;
+            --bg: #f5f5f5;
+            --text: #333;
+            --win: #2e7d32;
+            --lose: #d32f2f;
+            --warning: #f57c00;
+            --whatsapp: #25D366;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding-bottom: 85px;
+            user-select: none;
+        }
+
+        header {
+            background-color: var(--primary-dark);
+            color: white;
+            height: 54px;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .header-content {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 100%; padding: 0 15px; position: relative;
+        }
+        .header-title { 
+            font-weight: bold; font-size: 1.15em; position: absolute; left: 50%;
+            transform: translateX(-50%); white-space: nowrap; display: flex; align-items: center; gap: 5px;
+        }
+        .online-badge {
+            background: #e8f5e9; color: var(--primary); font-size: 0.7em; padding: 2px 6px; border-radius: 10px; display: none;
+        }
+        .btn-header {
+            border: none; padding: 7px 12px; border-radius: 20px; 
+            font-weight: bold; font-size: 0.9em; cursor: pointer; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 2;
+        }
+        .btn-header:active { transform: scale(0.95); }
+        .btn-zhui-header { background: #ffe0b2; color: #000; }
+        .btn-end-header { background: #e53935; color: white; }
+
+        .container { padding: 6px; max-width: 600px; margin: auto; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .cross-layout { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px; margin-top: 5px; }
+        .cross-row { display: flex; justify-content: center; gap: 8px; width: 100%; }
+        .card-wrapper { width: 49%; max-width: 240px; }
+
+        .player-card {
+            background: white; border-radius: 12px; padding: 15px 10px; text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
+            height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .player-name { font-weight: bold; font-size: 1.4em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+        .player-score { font-size: 3.2em; font-weight: bold; margin: 10px 0; line-height: 1; }
+        .score-pos { color: var(--win); }
+        .score-neg { color: var(--lose); }
+
+        .main-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .sq-btn {
+            flex: 1; aspect-ratio: 1; border-radius: 12px; font-size: 1.4em; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 0;
+        }
+        .sq-btn:active { transform: scale(0.95); }
+        .btn-kong { background: #e8f5e9; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-win { background: var(--accent); color: #000; border: 2px solid #fbc02d; }
+        
+        .small-btn { width: 100%; padding: 6px; font-size: 0.85em; border-radius: 6px; border: none; font-weight: bold; }
+        .btn-danger { background: #ffebee; color: var(--lose); }
+        .btn-wa { background: var(--whatsapp); color: white; }
+
+        .settings-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .setup-card { background: white; border-radius: 12px; padding: 15px 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid var(--primary); }
+        .setup-card .player-label { font-weight: bold; color: var(--primary); font-size: 1.1em; margin-bottom: 8px; }
+        .setup-emoji-display { font-size: 3em; width: 100%; text-align: center; margin-bottom: 10px; cursor: pointer; display: block; user-select: none; }
+        .setup-emoji-display:active { opacity: 0.7; }
+        .setup-name-input { width: 90%; font-size: 1.1em; padding: 8px; text-align: center; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: var(--bg); }
+
+        .log-item { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .log-desc { font-size: 0.95em; flex: 1; padding-right: 10px; line-height: 1.4; overflow-wrap: break-word; }
+        .undo-btn { background: #ffebee; color: var(--lose); padding: 6px 12px; border-radius: 6px; flex: none; width: auto; font-size: 0.85em; font-weight: bold; white-space: nowrap; border:none; cursor: pointer; }
+        .change-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; margin-right: 5px; margin-top: 5px; background: #f0f0f0; font-weight: bold; }
+        
+        .session-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stats-box { background: #fdfbf7; border: 1px dashed #ccc; border-radius: 8px; padding: 10px; margin-top: 15px; font-size: 0.85em; color: #555; line-height: 1.6; }
+
+        .tile-grid { display: flex; justify-content: center; gap: 15px; margin: 30px 0; }
+        .mahjong-tile { width: 60px; height: 90px; background: #fff; border: 2px solid #ccc; border-radius: 8px; box-shadow: 2px 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 2.5em; font-weight: bold; color: transparent; cursor: pointer; }
+        .mahjong-tile.revealed { background: #fdfdfd; color: #d32f2f; border-color: #d32f2f; cursor: default; }
+
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 90; }
+        nav div { flex: 1; text-align: center; padding: 14px 0; font-size: 0.9em; color: #777; cursor: pointer; line-height: 1.4; }
+        nav div.active { color: var(--primary); font-weight: bold; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px 20px; border-radius: 15px; width: 90%; max-width: 420px; }
+        .modal-content h3 { font-size: 1.5em; margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        
+        .emoji-modal-content { padding: 15px 20px 20px 20px; max-width: 360px; height: 60vh; display: flex; flex-direction: column; }
+        .emoji-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .emoji-modal-header h3 { margin: 0; border: none; padding: 0; font-size: 1.3em; text-align: left; }
+        .btn-close-circle { background: #f0f0f0; color: #666; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 1.2em; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+        .emoji-grid-container { flex: 1; overflow-y: auto; padding-right: 5px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px 8px; align-content: start; }
+        .emoji-item { font-size: 1.8em; text-align: center; cursor: pointer; user-select: none; border-radius: 8px; padding: 5px 0; }
+        .emoji-item:active { background: #eee; transform: scale(0.9); }
+        .emoji-grid-container::-webkit-scrollbar { width: 4px; }
+        .emoji-grid-container::-webkit-scrollbar-thumb { background-color: #ddd; border-radius: 2px; }
+
+        .modal-content .settings-item { font-size: 1.15em; padding: 12px 10px; margin-bottom: 15px; } 
+        .modal-content select { font-size: 1.1em; padding: 10px; border-radius: 8px; width: 150px; border: 1px solid #ddd; background: white; text-align: center;}
+        .modal-content input[type="checkbox"] { width: 25px; height: 25px; } 
+        
+        .modal-content .btn-row { display: flex; justify-content: center; gap: 15px; margin-top: 20px; width: 100%; }
+        .modal-content .btn-row button { flex: 1; max-width: 160px; font-size: 1.15em; padding: 14px; margin: 0; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; }
+
+        .btn-kong-opt { width: 100%; padding: 18px; font-size: 1.3em; background: #f5f5f5; border: 2px solid var(--primary); color: var(--primary); border-radius: 12px; margin-bottom: 12px; font-weight: bold; cursor: pointer; }
+        .btn-kong-opt:active { background: var(--primary); color: white; }
+
+        .stepper { display: flex; align-items: center; gap: 15px; }
+        .stepper button { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 20px; background: var(--primary); color: white; font-size: 1.5em; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0; border: none; cursor:pointer; }
+        .stepper button:active { background: var(--primary-dark); }
+        .stepper span { font-size: 1.4em; font-weight: bold; min-width: 40px; text-align: center; display: inline-block; }
+        
+        .danger-zone { background: #fff5f5; border: 1px solid #ffcdd2; padding: 15px; border-radius: 8px; margin-top: 20px; margin-bottom: 30px; }
+        .danger-zone h4 { color: #c62828; margin-top: 0; margin-bottom: 10px; font-size: 1em;}
+        
+        .online-zone { background: #e3f2fd; border: 1px solid #a5d6a7; padding: 15px; border-radius: 8px; margin-top: 20px; margin-bottom: 20px; }
+        .online-zone input { width: 100%; font-size: 1.5em; padding: 10px; text-align: center; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <button class="btn-header btn-zhui-header" onclick="openZhuiModal()">😰 被追</button>
+        <div class="header-title">
+            跑馬仔
+            <span id="headerRoomBadge" class="online-badge">🟢 12345</span>
+        </div>
+        <button class="btn-header btn-end-header" onclick="confirmEndSession()">完場結算</button>
+    </div>
+</header>
+
+<div class="container">
+    <div id="view-game" class="view active">
+        <div class="cross-layout" id="playerGrid"></div>
+    </div>
+
+    <div id="view-shuffle" class="view">
+        <div style="text-align: center; font-size: 1.2em; font-weight: bold; margin: 20px 0; color: var(--primary-dark);" id="shuffleStatus">請按按鈕開始抽位</div>
+        <div class="tile-grid">
+            <div class="mahjong-tile" id="tile-0" onclick="pickTile(0)">🀫</div>
+            <div class="mahjong-tile" id="tile-1" onclick="pickTile(1)">🀫</div>
+            <div class="mahjong-tile" id="tile-2" onclick="pickTile(2)">🀫</div>
+            <div class="mahjong-tile" id="tile-3" onclick="pickTile(3)">🀫</div>
+        </div>
+        <button onclick="startShuffle()" style="background: var(--primary); color: white; width: 100%; padding: 15px; font-size: 1.1em; border:none; border-radius:8px;">重新洗牌</button>
+    </div>
+
+    <div id="view-history" class="view">
+        <h3>📜 當前局數交易紀錄</h3>
+        <div id="historyLog"></div>
+    </div>
+
+    <div id="view-sessions" class="view">
+        <h3>🏆 歷屆戰績及榮譽榜</h3>
+        <div id="sessionList"></div>
+    </div>
+
+    <div id="view-settings" class="view">
+        <!-- 🌐 網上連線專區 -->
+        <div class="online-zone">
+            <h4 style="color: var(--primary-dark); margin-top: 0; margin-bottom: 5px; font-size: 1.1em;">🌐 網上連線房間 (即時同步)</h4>
+            <p style="font-size:0.85em; color:#555; margin-top:0;">輸入 5 位數字建立或加入房間，多部手機即時同步分數。</p>
+            <input type="tel" id="roomIdInput" placeholder="例如: 88888" maxlength="5">
+            <div style="display:flex; gap: 10px;">
+                <button onclick="createRoom()" style="flex:1; background: var(--primary); color: white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor: pointer; font-size: 1.05em;">創建新房</button>
+                <button onclick="joinRoomBtn()" style="flex:1; background: var(--accent); color: #000; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor: pointer; font-size: 1.05em;">加入房間</button>
+            </div>
+            <div id="roomStatusText" style="margin-top: 10px; text-align: center; color: #666; font-size: 0.9em; font-weight:bold;">單機模式 (未連線)</div>
+            <button id="leaveRoomBtn" onclick="leaveRoom()" style="display:none; width:100%; margin-top:10px; background: #e0e0e0; color: #333; border:none; padding:10px; border-radius:8px; cursor: pointer; font-weight:bold;">🚪 離開房間 (轉回單機)</button>
+        </div>
+
+        <h3>👤 玩家設定</h3>
+        <div id="nameSettings"></div>
+        
+        <h3>⚙ 金額設定</h3>
+        <div class="settings-item"><span>食糊 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('base', -5)">−</button><span id="display-base">10</span><button type="button" onclick="adjustSetting('base', 5)">＋</button><input type="hidden" id="set-base" value="10"></div></div>
+        <div class="settings-item"><span>中馬 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('horse', -5)">−</button><span id="display-horse">10</span><button type="button" onclick="adjustSetting('horse', 5)">＋</button><input type="hidden" id="set-horse" value="10"></div></div>
+        <div class="settings-item"><span>明槓 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('ming', -5)">−</button><span id="display-ming">10</span><button type="button" onclick="adjustSetting('ming', 5)">＋</button><input type="hidden" id="set-ming" value="10"></div></div>
+        <div class="settings-item"><span>暗槓 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('an', -5)">−</button><span id="display-an">10</span><button type="button" onclick="adjustSetting('an', 5)">＋</button><input type="hidden" id="set-an" value="10"></div></div>
+        <div class="settings-item"><span>加槓 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('jia', -5)">−</button><span id="display-jia">5</span><button type="button" onclick="adjustSetting('jia', 5)">＋</button><input type="hidden" id="set-jia" value="5"></div></div>
+        <div class="settings-item"><span>被追 ($)</span><div class="stepper"><button type="button" onclick="adjustSetting('zhui', -5)">−</button><span id="display-zhui">10</span><button type="button" onclick="adjustSetting('zhui', 5)">＋</button><input type="hidden" id="set-zhui" value="10"></div></div>
+
+        <h3>地獄規矩與系統</h3>
+        <div class="settings-item"><span>槓爆 (雙計)</span><input type="checkbox" id="set-kongExp" style="width: 25px; height: 25px;"></div>
+        <div class="settings-item"><span>包抄 (出銃者包全場)</span><input type="checkbox" id="set-fullWrap" style="width: 25px; height: 25px;"></div>
+        <div class="settings-item"><span>🔊 語音廣播</span><input type="checkbox" id="set-voice" style="width: 25px; height: 25px;"></div>
+
+        <button onclick="saveSettings()" style="background: var(--primary); color: white; width: 100%; margin: 20px 0; padding: 15px; border:none; border-radius:8px; font-size:1.15em; cursor: pointer;">💾 儲存設定及名稱</button>
+        
+        <div class="danger-zone">
+            <h4>⚠ 危險區域</h4>
+            <button onclick="resetScores()" class="btn-danger" style="width: 100%; padding: 15px; border:none; border-radius:8px; margin-bottom:10px; font-weight:bold; font-size:1.1em; cursor: pointer;">🧨 清空所有分數 (開新局)</button>
+            <button onclick="clearSessions()" class="btn-danger" style="width: 100%; padding: 15px; border: 1px solid #d32f2f; background: white; border-radius:8px; font-weight:bold; font-size:1.1em; cursor: pointer;">🗑️ 清除所有歷屆戰績</button>
+        </div>
+    </div>
+</div>
+
+<!-- 彈窗區保留原樣 -->
+<div id="zhuiModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇被追玩家</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家被追：</span><select id="zhuiPlayerId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px;"></select></div><div class="btn-row"><button onclick="closeModal('zhuiModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: #ffe0b2; color: #000;" onclick="submitZhui()">確認</button></div></div></div>
+<div id="emojiModal" class="modal-overlay"><div class="modal-content emoji-modal-content"><div class="emoji-modal-header"><h3>選擇動物</h3><button class="btn-close-circle" onclick="closeModal('emojiModal')">×</button></div><div class="emoji-grid-container" id="emojiGridBox"></div></div></div>
+<div id="winModal" class="modal-overlay"><div class="modal-content"><h3>🀄 食糊結算</h3><div class="settings-item"><span>勝出者:</span> <b id="winPlayerName" style="font-size: 1.2em; color: var(--primary);"></b></div><div class="settings-item"><span>類型:</span><select id="winType"><option value="discard">出銃</option><option value="self">自摸</option></select></div><div id="loserSelectRow" class="settings-item"><span>出銃者:</span> <select id="loserId"></select></div><div id="horseCountRow" class="settings-item"><span>獎馬數量:</span> <div class="stepper"><button type="button" onclick="adjustHorse(-1)">−</button><span id="horseCountDisplay">0</span><button type="button" onclick="adjustHorse(1)">＋</button></div><input type="hidden" id="horseCount" value="0"></div><div class="settings-item"><span>是否槓爆?</span> <input type="checkbox" id="isKongExp"></div><div class="btn-row"><button onclick="closeModal('winModal')" style="background: #e0e0e0; color: #333;">取消</button><button class="btn-win" style="color: #000;" onclick="submitWin()">確認結算</button></div></div></div>
+<div id="kongModal" class="modal-overlay"><div class="modal-content"><h3>🀄 開槓選擇</h3><div class="settings-item" style="justify-content: center; background: transparent; padding: 5px;"><b id="kongPlayerName" style="font-size: 1.3em; color: var(--primary);"></b></div><div style="margin-top: 15px;"><button class="btn-kong-opt" onclick="submitKong('an')">暗槓</button><button class="btn-kong-opt" onclick="submitKong('ming')">明槓</button><button class="btn-kong-opt" onclick="submitKong('jia')">加槓</button></div><div class="btn-row"><button onclick="closeModal('kongModal')" style="background: #e0e0e0; color: #333;">取消</button></div></div></div>
+<div id="mingModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇明槓出銃者</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家打出俾 <b id="mingPlayerName" style="color:var(--primary); font-size:1.1em;"></b> 槓：</span><select id="mingLoserId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px; background: white;"></select></div><div class="btn-row"><button onclick="closeModal('mingModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: var(--primary); color: white;" onclick="submitMing()">確認</button></div></div></div>
+
+<!-- 🔴 Firebase 模組引入 (為咗做到多機同步) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 🔴 如果放上 Hostinger，請將你申請嘅 Firebase Config 貼入下面 `fallbackConfig` 中！
+   const firebaseConfig = {
+  apiKey: "AIzaSyAT2VSkPd33r7ZphPt7OvL-2aguQCzayAg",
+  authDomain: "mj-score-kevinckc.firebaseapp.com",
+  projectId: "mj-score-kevinckc",
+  storageBucket: "mj-score-kevinckc.firebasestorage.app",
+  messagingSenderId: "931414887918",
+  appId: "1:931414887918:web:894172b7e3912fd326d2ff"
+};
+
+    let firebaseConfig = {};
+    const isCanvas = typeof __firebase_config !== 'undefined';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'hostinger-mj-app';
+
+    if (isCanvas) {
+        firebaseConfig = JSON.parse(__firebase_config);
+    } else {
+        firebaseConfig = fallbackConfig; // Hostinger 用呢個
+    }
+
+    let app, auth, db, user;
+    let unsubscribeSnapshot = null;
+    let currentRoomId = localStorage.getItem('mj_room_id') || '';
+
+    // 初始化 Firebase (如果有設定的話)
+    if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.projectId) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // 匿名登入
+        signInAnonymously(auth).then(() => {
+            onAuthStateChanged(auth, (u) => {
+                user = u;
+                if (user && currentRoomId) {
+                    joinFirebaseRoom(currentRoomId);
+                }
+            });
+        }).catch(err => console.error("Auth failed:", err));
+    }
+
+    const emojiList = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐒','🦍','🦧','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🦓','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐈‍⬛','🐓','🦃','🦚','🦜','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'];
+
+    let players = JSON.parse(localStorage.getItem('mj_players')) || [
+        { id: 0, name: "玩家 1", score: 0, wind: "東", emoji: "🐶", stats: { win: 0, selfDraw: 0, discard: 0, kong: 0 } },
+        { id: 1, name: "玩家 2", score: 0, wind: "南", emoji: "🐱", stats: { win: 0, selfDraw: 0, discard: 0, kong: 0 } },
+        { id: 2, name: "玩家 3", score: 0, wind: "西", emoji: "🐼", stats: { win: 0, selfDraw: 0, discard: 0, kong: 0 } },
+        { id: 3, name: "玩家 4", score: 0, wind: "北", emoji: "🐯", stats: { win: 0, selfDraw: 0, discard: 0, kong: 0 } }
+    ];
+    players.forEach(p => { if(!p.stats) p.stats = { win: 0, selfDraw: 0, discard: 0, kong: 0 }; });
+
+    let config = JSON.parse(localStorage.getItem('mj_config')) || { base: 10, horse: 10, ming: 10, an: 10, jia: 5, zhui: 10, fullWrap: false, kongExp: false, voiceEnabled: true };
+    if(config.voiceEnabled === undefined) config.voiceEnabled = true;
+    
+    let sessions = JSON.parse(localStorage.getItem('mj_sessions')) || [];
+    let history = JSON.parse(localStorage.getItem('mj_history')) || [];
+    let currentWinnerId = null, currentKongPlayerId = null, currentEmojiPlayerId = null; 
+    let shuffledWinds = [], pickingIndex = 0, isShuffling = false;
+
+    // --- 連線專用功能 ---
+    function getRoomRef(roomId) {
+        if(isCanvas) return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+        return doc(db, 'mahjong_rooms', roomId); // Hostinger 簡單路徑
+    }
+
+    async function syncToCloud() {
+        if (!user || !db || !currentRoomId) return; // 單機模式唔做雲端儲存
+        try {
+            const data = { players, config, history, sessions, lastUpdated: Date.now() };
+            await setDoc(getRoomRef(currentRoomId), data);
+        } catch (e) { console.error("Cloud Sync Error:", e); }
+    }
+
+    function updateRoomUI() {
+        const statusText = document.getElementById('roomStatusText');
+        const leaveBtn = document.getElementById('leaveRoomBtn');
+        const badge = document.getElementById('headerRoomBadge');
+        if(currentRoomId) {
+            statusText.innerHTML = `<span style="color:var(--primary);">🟢 已連線至房間: <b>${currentRoomId}</b></span>`;
+            leaveBtn.style.display = 'block';
+            badge.style.display = 'inline-block';
+            badge.innerText = `🟢 ${currentRoomId}`;
+        } else {
+            statusText.innerHTML = `單機模式 (未連線)`;
+            leaveBtn.style.display = 'none';
+            badge.style.display = 'none';
+        }
+    }
+
+    window.createRoom = () => {
+        if (!db) return alert("Firebase 未設定，請檢查代碼中嘅 fallbackConfig。");
+        const newId = Math.floor(10000 + Math.random() * 90000).toString(); // 隨機 5 位數
+        joinFirebaseRoom(newId);
+    };
+
+    window.joinRoomBtn = () => {
+        if (!db) return alert("Firebase 未設定，請檢查代碼中嘅 fallbackConfig。");
+        const input = document.getElementById('roomIdInput').value.trim();
+        if(input.length !== 5) return alert("請輸入 5 位數字房間號碼！");
+        joinFirebaseRoom(input);
+    };
+
+    window.leaveRoom = () => {
+        if(unsubscribeSnapshot) unsubscribeSnapshot();
+        currentRoomId = '';
+        localStorage.removeItem('mj_room_id');
+        updateRoomUI();
+        alert("已切斷連線，回到單機模式。");
+    };
+
+    function joinFirebaseRoom(roomId) {
+        if(!user) return alert("系統連接中，請稍後重試...");
+        currentRoomId = roomId;
+        localStorage.setItem('mj_room_id', roomId);
+        updateRoomUI();
+
+        if(unsubscribeSnapshot) unsubscribeSnapshot();
+        
+        unsubscribeSnapshot = onSnapshot(getRoomRef(roomId), (docSnap) => {
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                // 從雲端覆蓋本地數據 (唔包括語音設定，語音設定係跟機的)
+                const oldVoice = config.voiceEnabled; 
+                players = data.players || players;
+                config = data.config || config;
+                config.voiceEnabled = oldVoice; 
+                history = data.history || history;
+                sessions = data.sessions || sessions;
+                
+                // 本地儲存備份
+                localStorage.setItem('mj_players', JSON.stringify(players)); 
+                localStorage.setItem('mj_config', JSON.stringify(config)); 
+                localStorage.setItem('mj_history', JSON.stringify(history)); 
+                localStorage.setItem('mj_sessions', JSON.stringify(sessions));
+                
+                renderDashboard(); renderHistory(); renderSessions(); renderSettings();
+            } else {
+                // 房間不存在，即係新建
+                syncToCloud();
+            }
+        }, (err) => {
+            console.error(err);
+            alert("連線發生錯誤！");
+        });
+        
+        document.getElementById('roomIdInput').value = '';
+        alert(`成功連接房間 [${roomId}]！所有動作將即時同步。`);
+    }
+
+    // 覆寫原本嘅 saveData，加入雲端同步
+    function saveData() { 
+        localStorage.setItem('mj_players', JSON.stringify(players)); 
+        localStorage.setItem('mj_config', JSON.stringify(config)); 
+        localStorage.setItem('mj_history', JSON.stringify(history)); 
+        localStorage.setItem('mj_sessions', JSON.stringify(sessions)); 
+        syncToCloud(); // 每次本地 save 都推上雲端
+    }
+
+    // --- 語音系統 ---
+    let cantoneseVoice = null;
+    function loadVoices() {
+        if (!('speechSynthesis' in window)) return;
+        cantoneseVoice = window.speechSynthesis.getVoices().find(v => 
+            v.lang === 'zh-HK' || v.lang === 'yue-HK' || v.lang.includes('HK') || v.name.includes('Hong Kong') || v.name.includes('Cantonese')
+        );
+    }
+    if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = loadVoices; }
+    document.addEventListener('click', function unlockAudio() {
+        if(config.voiceEnabled && 'speechSynthesis' in window) {
+            let u = new SpeechSynthesisUtterance(''); u.volume = 0; window.speechSynthesis.speak(u);
+        }
+        document.removeEventListener('click', unlockAudio);
+    }, {once: true});
+
+    function speak(text) {
+        if (!config.voiceEnabled || !('speechSynthesis' in window)) return;
+        if (!cantoneseVoice) loadVoices();
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (cantoneseVoice) utterance.voice = cantoneseVoice; 
+        else utterance.lang = 'zh-HK'; 
+        utterance.rate = 1.05; 
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // --- 核心渲染函數 ---
+    function renderDashboard() {
+        const grid = document.getElementById('playerGrid');
+        const makeCard = (p) => {
+            if(!p) return '';
+            return `
+            <div class="card-wrapper">
+                <div class="player-card">
+                    <div class="player-name">${p.emoji} ${p.wind} - ${p.name}</div>
+                    <div class="player-score ${p.score >= 0 ? 'score-pos' : 'score-neg'}">${p.score > 0 ? '+' : ''}${p.score}</div>
+                    <div class="main-actions">
+                        <button class="sq-btn btn-kong" onclick="openKongModal(${p.id})">開槓</button>
+                        <button class="sq-btn btn-win" onclick="openWinModal(${p.id})">食糊</button>
+                    </div>
+                </div>
+            </div>`;
+        };
+        const getP = (w) => players.find(p => p.wind === w);
+        grid.innerHTML = `<div class="cross-row">${makeCard(getP('北'))}</div><div class="cross-row">${makeCard(getP('西'))}${makeCard(getP('東'))}</div><div class="cross-row">${makeCard(getP('南'))}</div>`;
+    }
+
+    function renderHistory() {
+        const log = document.getElementById('historyLog');
+        if(history.length === 0) { log.innerHTML = "<p style='text-align:center; color:#999;'>當前局數暫無紀錄</p>"; return; }
+        log.innerHTML = history.slice().reverse().map((item, idx) => {
+            let changesHtml = '<div style="display:flex; flex-wrap:wrap; margin-top:6px;">';
+            Object.keys(item.change).forEach(pid => {
+                let val = item.change[pid];
+                if(val !== 0) {
+                    let p = players.find(x => x.id == pid);
+                    if(p) changesHtml += `<span class="change-badge" style="color:${val > 0 ? 'var(--win)' : 'var(--lose)'}">${p.emoji} ${val > 0 ? '+' : ''}${val}</span>`;
+                }
+            });
+            return `<div class="log-item"><div class="log-desc"><b>${item.desc}</b><br><small style="color: #888; font-size: 0.85em;">${item.time}</small>${changesHtml}</div><button class="undo-btn" onclick="undo(${history.length - 1 - idx})">撤銷</button></div>`;
+        }).join('');
+    }
+
+    function renderSessions() {
+        const list = document.getElementById('sessionList');
+        if(sessions.length === 0) { list.innerHTML = "<p style='text-align:center; color:#999;'>暫無歷史戰績</p>"; return; }
+        list.innerHTML = sessions.slice().reverse().map((s) => {
+            let waText = `🀄 跑馬仔結算 [${s.date}]\n` + s.results.map(r => `${r.emoji} ${r.name}: ${r.score >=0 ? '+':''}${r.score}`).join('\n');
+            let statsHtml = s.titles ? `<div class="stats-box"><b>👑 榮譽榜</b><br>🎖 食糊王: <b>${s.titles.winKing}</b><br>🔥 自摸王: <b>${s.titles.selfDrawKing}</b><br>💸 出銃王: <b>${s.titles.discardKing}</b><br>💪 槓　王: <b>${s.titles.kongKing}</b></div>` : '';
+            if(s.titles) waText += `\n\n👑 榮譽榜\n🎖 食糊王: ${s.titles.winKing}\n🔥 自摸王: ${s.titles.selfDrawKing}\n💸 出銃王: ${s.titles.discardKing}\n💪 槓王: ${s.titles.kongKing}`;
+            return `<div class="session-card"><div style="font-size:0.8em; color:#888; margin-bottom:10px; border-bottom:1px inset #eee;">📅 ${s.date}</div><div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">${s.results.map(r => `<div style="font-size:0.9em;">${r.emoji} ${r.name}: <b style="color:${r.score >=0 ? 'green':'red'}">${r.score >=0 ? '+':''}${r.score}</b></div>`).join('')}</div>${statsHtml}<button onclick="window.open('whatsapp://send?text=${encodeURIComponent(waText)}')" class="btn-wa" style="width:100%; margin-top:15px; padding:12px; font-size:1.05em; border:none; border-radius:8px; cursor: pointer;">💬 WhatsApp 分享戰績</button></div>`;
+        }).join('');
+    }
+
+    function renderSettings() {
+        document.getElementById('nameSettings').innerHTML = `<div class="setup-grid">${players.map(p => `<div class="setup-card"><div class="player-label">${p.wind}位 玩家</div><div class="setup-emoji-display" id="display-emoji-${p.id}" onclick="openEmojiModal(${p.id})">${p.emoji}</div><input type="hidden" id="input-emoji-${p.id}" value="${p.emoji}"><input type="text" id="name-${p.id}" class="setup-name-input" value="${p.name}"></div>`).join('')}</div>`;
+        ['base','horse','ming','an','jia','zhui'].forEach(k => {
+            const val = config[k] || 0;
+            if (document.getElementById(`set-${k}`)) document.getElementById(`set-${k}`).value = val;
+            if (document.getElementById(`display-${k}`)) document.getElementById(`display-${k}`).innerText = val;
+        });
+        document.getElementById('set-fullWrap').checked = config.fullWrap;
+        document.getElementById('set-kongExp').checked = config.kongExp;
+        document.getElementById('set-voice').checked = config.voiceEnabled;
+    }
+
+    // --- 將所有操作綁定到 window (為咗令 Type="module" 中嘅 function 喺 HTML button onclick 生效) ---
+    window.showView = showView;
+    window.startShuffle = () => {
+        shuffledWinds = ['東', '南', '西', '北'].sort(() => Math.random() - 0.5); pickingIndex = 0; isShuffling = true;
+        document.querySelectorAll('.mahjong-tile').forEach(t => { t.innerText='🀫'; t.classList.remove('revealed'); });
+        document.getElementById('shuffleStatus').innerHTML = `請 <b>${players[0].emoji} ${players[0].name}</b> 抽牌`;
+    };
+    window.pickTile = (idx) => {
+        if (!isShuffling || pickingIndex >= 4) return;
+        const tile = document.getElementById(`tile-${idx}`); if (tile.classList.contains('revealed')) return;
+        tile.innerText = shuffledWinds[pickingIndex]; tile.classList.add('revealed');
+        players[pickingIndex].wind = shuffledWinds[pickingIndex]; pickingIndex++;
+        if (pickingIndex < 4) document.getElementById('shuffleStatus').innerHTML = `請 <b>${players[pickingIndex].emoji} ${players[pickingIndex].name}</b> 抽牌`;
+        else { document.getElementById('shuffleStatus').innerText = `執位完成！`; setTimeout(() => { isShuffling = false; window.resetScores(); showView('game'); }, 1000); }
+    };
+    
+    window.openZhuiModal = () => { document.getElementById('zhuiPlayerId').innerHTML = players.map(x => `<option value="${x.id}">${x.emoji} ${x.wind} - ${x.name}</option>`).join(''); document.getElementById('zhuiModal').style.display = 'flex'; };
+    window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
+    window.submitZhui = () => { const pid = parseInt(document.getElementById('zhuiPlayerId').value); window.handleEvent(pid, 'zhui'); window.closeModal('zhuiModal'); };
+    
+    window.openKongModal = (pid) => { currentKongPlayerId = pid; const w = players.find(x => x.id === pid); document.getElementById('kongPlayerName').innerText = `${w.emoji} ${w.name}`; document.getElementById('kongModal').style.display = 'flex'; };
+    window.submitKong = (type) => { if (type === 'ming') { window.closeModal('kongModal'); window.openMingModal(); } else { window.handleEvent(currentKongPlayerId, type); window.closeModal('kongModal'); } };
+    window.openMingModal = () => { const w = players.find(x => x.id === currentKongPlayerId); document.getElementById('mingPlayerName').innerText = `${w.emoji} ${w.name}`; document.getElementById('mingLoserId').innerHTML = players.filter(x => x.id !== currentKongPlayerId).map(x => `<option value="${x.id}">${x.wind} - ${x.name}</option>`).join(''); document.getElementById('mingModal').style.display = 'flex'; };
+    window.submitMing = () => {
+        const lId = parseInt(document.getElementById('mingLoserId').value); const winner = players.find(x => x.id === currentKongPlayerId); const loser = players.find(x => x.id === lId);
+        const amount = config.ming; const change = {};
+        players.forEach(x => { if(x.id === winner.id) change[x.id] = amount; else if(x.id === loser.id) change[x.id] = -amount; else change[x.id] = 0; });
+        const statUpdates = [{id: winner.id, type: 'kong', val: 1}];
+        applyChange(change, `${winner.emoji} ${winner.name} 明槓 (${loser.emoji} ${loser.name} 打出)`, statUpdates);
+        speak(`銀牙！${winner.name}，明槓`); window.closeModal('mingModal');
+    };
+
+    window.handleEvent = (pid, type) => {
+        const change = {}; let statUpdates = []; const p = players.find(x => x.id === pid); let amount = 0, name = "", speechText = "";
+        if(type==='zhui') { amount = config.zhui; players.forEach(x => { if(x.id===pid) change[x.id] = -(amount*3); else change[x.id] = amount; }); name = "被追"; speechText = `${p.name}，被追`; } 
+        else {
+            if(type==='an') { amount = config.an; name = "暗槓"; speechText = `銀牙！${p.name}，暗槓`; } else if(type==='jia') { amount = config.jia; name = "加槓"; speechText = `銀牙！${p.name}，加槓`; }
+            players.forEach(x => { if(x.id===pid) change[x.id] = amount*3; else change[x.id] = -amount; }); statUpdates.push({id: pid, type: 'kong', val: 1});
+        }
+        applyChange(change, `${p.emoji} ${p.name} ${name}`, statUpdates); speak(speechText);
+    };
+
+    window.adjustHorse = (delta) => { const i = document.getElementById('horseCount'); const d = document.getElementById('horseCountDisplay'); let v = (parseInt(i.value)||0)+delta; if(v<0) v=0; i.value=v; d.innerText=v; };
+    window.adjustSetting = (key, delta) => { const i = document.getElementById(`set-${key}`); const d = document.getElementById(`display-${key}`); let v = (parseInt(i.value)||0)+delta; if(v<0) v=0; i.value=v; d.innerText=v; };
+    
+    window.updateWinModalUI = () => {
+        const isSelf = document.getElementById('winType').value === 'self';
+        document.getElementById('loserSelectRow').style.display = isSelf ? 'none' : 'flex';
+        if (isSelf || config.fullWrap) { document.getElementById('horseCountRow').style.display = 'flex'; } 
+        else { document.getElementById('horseCountRow').style.display = 'none'; document.getElementById('horseCount').value = 0; document.getElementById('horseCountDisplay').innerText = "0"; }
+    };
+    window.openWinModal = (pid) => {
+        currentWinnerId = pid; const w = players.find(x => x.id === pid);
+        document.getElementById('winPlayerName').innerText = `${w.emoji} ${w.name}`;
+        document.getElementById('loserId').innerHTML = players.filter(x => x.id !== pid).map(x => `<option value="${x.id}">${x.wind} - ${x.name}</option>`).join('');
+        document.getElementById('horseCount').value = 0; document.getElementById('horseCountDisplay').innerText = "0"; document.getElementById('isKongExp').checked = false; document.getElementById('winType').value = 'discard';
+        window.updateWinModalUI(); document.getElementById('winModal').style.display = 'flex'; document.getElementById('winType').onchange = window.updateWinModalUI;
+    };
+    window.submitWin = () => {
+        const type = document.getElementById('winType').value; const hCount = parseInt(document.getElementById('horseCount').value) || 0;
+        let unit = config.base + (hCount * config.horse); if(document.getElementById('isKongExp').checked) unit *= 2;
+        const change = {}; let statUpdates = []; const winner = players.find(x => x.id === currentWinnerId); let descText = "", speechText = "";
+        if(type==='self') { 
+            players.forEach(x => { if(x.id===winner.id) change[x.id] = unit*3; else change[x.id] = -unit; }); 
+            statUpdates.push({id: winner.id, type: 'win', val: 1}); statUpdates.push({id: winner.id, type: 'selfDraw', val: 1});
+            descText = `${winner.emoji} ${winner.name} 自摸`; speechText = `${winner.name}，自摸`;
+        } else {
+            const lId = parseInt(document.getElementById('loserId').value); const loser = players.find(x => x.id === lId);
+            const winAmount = config.fullWrap ? (unit * 3) : unit; const loseAmount = config.fullWrap ? -(unit * 3) : -unit;
+            players.forEach(x => { if(x.id===winner.id) change[x.id] = winAmount; else if(x.id===lId) change[x.id] = loseAmount; else change[x.id] = 0; });
+            statUpdates.push({id: winner.id, type: 'win', val: 1}); statUpdates.push({id: lId, type: 'discard', val: 1});
+            descText = `${winner.emoji} ${winner.name} 食 ${loser.emoji} ${loser.name} 出銃`; speechText = `${winner.name}，食壺`;
+            if (config.fullWrap) descText += ' (包抄)';
+        }
+        if (hCount > 0) descText += ` (${hCount}馬)`;
+        if (document.getElementById('isKongExp').checked) { descText += ` (槓爆)`; speechText += `，槓爆`; }
+        applyChange(change, descText, statUpdates); speak(speechText); window.closeModal('winModal');
+    };
+
+    function applyChange(change, desc, statUpdates = []) {
+        players.forEach(p => { if(change[p.id]!==undefined) p.score += change[p.id]; });
+        statUpdates.forEach(su => { let p = players.find(x => x.id === su.id); p.stats[su.type] += su.val; });
+        history.push({ desc, change, statUpdates, time: new Date().toLocaleTimeString() });
+        saveData(); renderDashboard();
+    }
+
+    window.undo = (index) => {
+        const item = history[index];
+        players.forEach(p => { if(item.change[p.id] !== undefined) p.score -= item.change[p.id]; });
+        if(item.statUpdates) { item.statUpdates.forEach(su => { let p = players.find(x => x.id === su.id); p.stats[su.type] -= su.val; }); }
+        history.splice(index, 1); saveData(); renderDashboard(); renderHistory();
+    };
+
+    window.resetScores = () => { 
+        if(!confirm("⚠ 確定要清空當前所有分數？（此動作不會影響歷史戰績）")) return;
+        players.forEach(p => { p.score = 0; p.stats = { win: 0, selfDraw: 0, discard: 0, kong: 0 }; }); 
+        history = []; saveData(); renderDashboard(); showView('game');
+    };
+    window.clearSessions = () => { if(!confirm("⚠ 警告：確定要清除所有歷屆戰績及榮譽榜嗎？此動作無法復原！")) return; sessions = []; saveData(); renderSessions(); alert("✅ 歷屆戰績已成功清除！"); };
+    
+    window.openEmojiModal = (pid) => { currentEmojiPlayerId = pid; document.getElementById('emojiGridBox').innerHTML = emojiList.map(e => `<div class="emoji-item" onclick="selectEmoji('${e}')">${e}</div>`).join(''); document.getElementById('emojiModal').style.display = 'flex'; };
+    window.selectEmoji = (emoji) => { if (currentEmojiPlayerId !== null) { document.getElementById(`display-emoji-${currentEmojiPlayerId}`).innerText = emoji; document.getElementById(`input-emoji-${currentEmojiPlayerId}`).value = emoji; } window.closeModal('emojiModal'); };
+
+    window.saveSettings = () => {
+        players.forEach(p => { p.name = document.getElementById(`name-${p.id}`).value; p.emoji = document.getElementById(`input-emoji-${p.id}`).value; });
+        ['base','horse','ming','an','jia','zhui'].forEach(k => config[k] = parseInt(document.getElementById(`set-${k}`).value));
+        config.fullWrap = document.getElementById('set-fullWrap').checked; config.kongExp = document.getElementById('set-kongExp').checked; config.voiceEnabled = document.getElementById('set-voice').checked;
+        saveData(); renderDashboard(); showView('game');
+    };
+    
+    window.confirmEndSession = () => {
+        if(!confirm("完場結算會儲存今日分數並歸零。確定嗎？")) return;
+        const now = new Date(); const getKings = (statType) => { let max = -1; let kings = []; players.forEach(p => { if(p.stats[statType] > max) { max = p.stats[statType]; kings = [p]; } else if(p.stats[statType] === max) { kings.push(p); } }); if(max <= 0) return "無"; return kings.map(k => `${k.emoji}${k.name}`).join(', ') + ` (${max}次)`; };
+        const titles = { winKing: getKings('win'), selfDrawKing: getKings('selfDraw'), discardKing: getKings('discard'), kongKing: getKings('kong') };
+        sessions.push({ date: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${(now.getMinutes()<10?'0':'')+now.getMinutes()}`, results: players.map(p => ({ name: p.name, emoji: p.emoji, score: p.score })), titles: titles });
+        window.resetScores(); showView('sessions');
+    };
+
+    init();
+    updateRoomUI();
+</script>
+</body>
+</html>
