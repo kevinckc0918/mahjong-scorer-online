@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專業跑馬仔計分器 V8.7</title>
+    <title>專業跑馬仔計分器 V8.8</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1b5e20">
@@ -76,14 +76,15 @@
             background: white; border-radius: 12px; padding: 10px; text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
             height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
+            transition: all 0.2s ease-in-out;
         }
 
-        .player-name { font-weight: bold; font-size: 1.4em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-        .player-score { font-size: 3.2em; font-weight: bold; margin: 4px 0; line-height: 1; }
+        .player-name { font-weight: bold; font-size: 1.4em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; transition: all 0.2s; }
+        .player-score { font-size: 3.2em; font-weight: bold; margin: 4px 0; line-height: 1; transition: all 0.2s; }
         .score-pos { color: var(--win); }
         .score-neg { color: var(--lose); }
 
-        .main-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .main-actions { display: flex; gap: 8px; margin-top: 10px; transition: all 0.2s; }
         .sq-btn {
             flex: 1; aspect-ratio: 1; border-radius: 12px; font-size: 1.4em; font-weight: bold;
             display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
@@ -93,6 +94,23 @@
         .btn-kong { background: #e8f5e9; color: var(--primary); border: 2px solid var(--primary); }
         .btn-win { background: var(--accent); color: #000; border: 2px solid #fbc02d; }
         
+        /* ⭐️ 網上連線「純分數看板」專用樣式：隱藏按鈕、終極放大分數 */
+        .score-mode-active .main-actions {
+            display: none !important;
+        }
+        .score-mode-active .player-card {
+            padding: 30px 10px;
+            min-height: 180px;
+        }
+        .score-mode-active .player-name {
+            font-size: 1.6em;
+            color: #111;
+        }
+        .score-mode-active .player-score {
+            font-size: 5.2em;
+            margin: 15px 0;
+        }
+
         .small-btn { width: 100%; padding: 6px; font-size: 0.85em; border-radius: 6px; border: none; font-weight: bold; }
         .btn-danger { background: #ffebee; color: var(--lose); }
         .btn-wa { background: var(--whatsapp); color: white; }
@@ -174,6 +192,13 @@
 
 <div class="container">
     <div id="view-game" class="view active">
+        <!-- ⭐️ 頂部看板模式切換工具條 -->
+        <div style="display:flex; justify-content:center; margin: 4px 0 8px 0;">
+            <button id="scoreModeToggleBtn" onclick="toggleScoreMode()" style="background: #1565c0; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                🖥️ 切換至「純分數看板」
+            </button>
+        </div>
+
         <div class="cross-layout" id="playerGrid"></div>
     </div>
 
@@ -246,7 +271,7 @@
     </div> <!-- view-settings 閉合 -->
 </div> <!-- container 閉合 -->
 
-<!-- 彈窗區 (保持與 container 同層) -->
+<!-- 彈窗區 -->
 <div id="zhuiModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇被追玩家</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家被追：</span><select id="zhuiPlayerId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px;"></select></div><div class="btn-row"><button onclick="closeModal('zhuiModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: #ffe0b2; color: #000;" onclick="submitZhui()">確認</button></div></div></div>
 <div id="emojiModal" class="modal-overlay"><div class="modal-content emoji-modal-content"><div class="emoji-modal-header"><h3>選擇動物</h3><button class="btn-close-circle" onclick="closeModal('emojiModal')">×</button></div><div class="emoji-grid-container" id="emojiGridBox"></div></div></div>
 <div id="winModal" class="modal-overlay"><div class="modal-content"><h3>🀄 食糊結算</h3><div class="settings-item"><span>勝出者:</span> <b id="winPlayerName" style="font-size: 1.2em; color: var(--primary);"></b></div><div class="settings-item"><span>類型:</span><select id="winType"><option value="discard">出銃</option><option value="self">自摸</option></select></div><div id="loserSelectRow" class="settings-item"><span>出銃者:</span> <select id="loserId"></select></div><div id="horseCountRow" class="settings-item"><span>獎馬數量:</span> <div class="stepper"><button type="button" onclick="adjustHorse(-1)">−</button><span id="horseCountDisplay">0</span><button type="button" onclick="adjustHorse(1)">＋</button></div><input type="hidden" id="horseCount" value="0"></div><div class="settings-item"><span>是否槓爆?</span> <input type="checkbox" id="isKongExp"></div><div class="btn-row"><button onclick="closeModal('winModal')" style="background: #e0e0e0; color: #333;">取消</button><button class="btn-win" style="color: #000;" onclick="submitWin()">確認結算</button></div></div></div>
@@ -280,6 +305,9 @@
     let unsubscribeSnapshot = null;
     let currentRoomId = localStorage.getItem('mj_room_id') || '';
     let firebaseSupported = (typeof firebase !== 'undefined');
+    
+    // ⭐️ 看板模式狀態初始化
+    let scoreMode = localStorage.getItem('mj_score_mode') === 'true';
 
     const emojiList = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐒','🦍','🦧','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','裝','🐊','🐅','🦓','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐈‍⬛','🐓','🦃','🦚','🦜','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'];
 
@@ -480,6 +508,29 @@
         utterance.rate = 1.05; window.speechSynthesis.speak(utterance);
     }
 
+    // --- ⭐️ 觀戰/純分數看板模式切換邏輯 ---
+    function toggleScoreMode() {
+        scoreMode = !scoreMode;
+        localStorage.setItem('mj_score_mode', scoreMode);
+        updateScoreModeUI();
+    }
+
+    function updateScoreModeUI() {
+        const grid = document.getElementById('playerGrid');
+        const btn = document.getElementById('scoreModeToggleBtn');
+        if (!grid || !btn) return;
+
+        if (scoreMode) {
+            grid.classList.add('score-mode-active');
+            btn.innerHTML = "📊 切換回「操作模式」";
+            btn.style.background = "#e65100";
+        } else {
+            grid.classList.remove('score-mode-active');
+            btn.innerHTML = "🖥️ 切換至「純分數看板」";
+            btn.style.background = "#1565c0";
+        }
+    }
+
     // --- 核心渲染與控制函數 ---
     function renderDashboard() {
         const grid = document.getElementById('playerGrid');
@@ -499,6 +550,9 @@
         };
         const getP = (w) => players.find(p => p.wind === w);
         grid.innerHTML = `<div class="cross-row">${makeCard(getP('北'))}</div><div class="cross-row">${makeCard(getP('西'))}${makeCard(getP('東'))}</div><div class="cross-row">${makeCard(getP('南'))}</div>`;
+        
+        // 渲染完後立刻套用當前看板模式樣式
+        updateScoreModeUI();
     }
 
     function renderHistory() {
@@ -625,6 +679,7 @@
         document.getElementById('kongModal').style.display = 'flex'; 
     }
 
+    // 食糊 / 開槓
     function submitKong(type) { 
         if (type === 'ming') { 
             closeModal('kongModal'); 
@@ -650,17 +705,13 @@
         players.forEach(x => { if(x.id === winner.id) change[x.id] = amount; else if(x.id === loser.id) change[x.id] = -amount; else change[x.id] = 0; });
         const statUpdates = [{id: winner.id, type: 'kong', val: 1}];
         applyChange(change, `${winner.emoji} ${winner.name} 明槓 (${loser.emoji} ${loser.name} 打出)`, statUpdates);
-        
-        // 🔊 移除「銀牙！」字眼，直接讀出名字與動作
-        speak(`${winner.name}，明槓`); 
-        closeModal('mingModal');
+        speak(`${winner.name}，明槓`); closeModal('mingModal');
     }
 
     function handleEvent(pid, type) {
         const change = {}; let statUpdates = []; const p = players.find(x => x.id === pid); let amount = 0, name = "", speechText = "";
         if(type==='zhui') { amount = config.zhui; players.forEach(x => { if(x.id===pid) change[x.id] = -(amount*3); else change[x.id] = amount; }); name = "被追"; speechText = `${p.name}，被追`; } 
         else {
-            // 🔊 移除「銀牙！」字眼，直接讀出名字與動作
             if(type==='an') { amount = config.an; name = "暗槓"; speechText = `${p.name}，暗槓`; } 
             else if(type==='jia') { amount = config.jia; name = "加槓"; speechText = `${p.name}，加槓`; }
             
