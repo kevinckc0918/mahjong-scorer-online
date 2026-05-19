@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專業跑馬仔計分器 V8.3</title>
+    <title>專業跑馬仔計分器 V8.4</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1b5e20">
     <link rel="apple-touch-icon" href="./icon.png">
 
-    <!-- 🔴 引入 Firebase 兼容版 SDK (避免模組化作用域衝突，保證單機與連線均能 100% 載入) -->
+    <!-- 🔴 引入 Firebase 兼容版 SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -173,12 +173,10 @@
 </header>
 
 <div class="container">
-    <!-- 1. 主計分視圖 -->
     <div id="view-game" class="view active">
         <div class="cross-layout" id="playerGrid"></div>
     </div>
 
-    <!-- 2. 執位視圖 -->
     <div id="view-shuffle" class="view">
         <div style="text-align: center; font-size: 1.2em; font-weight: bold; margin: 20px 0; color: var(--primary-dark);" id="shuffleStatus">請按按鈕開始抽位</div>
         <div class="tile-grid">
@@ -190,19 +188,16 @@
         <button onclick="startShuffle()" style="background: var(--primary); color: white; width: 100%; padding: 15px; font-size: 1.1em; border:none; border-radius:8px;">重新洗牌</button>
     </div>
 
-    <!-- 3. 當前局數紀錄視圖 -->
     <div id="view-history" class="view">
         <h3>📜 當前局數交易紀錄</h3>
         <div id="historyLog"></div>
     </div>
 
-    <!-- 4. 歷屆戰績表視圖 -->
     <div id="view-sessions" class="view">
         <h3>🏆 歷屆戰績及榮譽榜</h3>
         <div id="sessionList"></div>
     </div>
 
-    <!-- 5. 設定與同步視圖 -->
     <div id="view-settings" class="view">
         <!-- 🌐 網上連線專區 -->
         <div class="online-zone">
@@ -248,15 +243,24 @@
             <button onclick="resetScores()" class="btn-danger" style="width: 100%; padding: 15px; border:none; border-radius:8px; margin-bottom:10px; font-weight:bold; font-size:1.1em; cursor: pointer;">🧨 清空所有分數 (開新局)</button>
             <button onclick="clearSessions()" class="btn-danger" style="width: 100%; padding: 15px; border: 1px solid #d32f2f; background: white; border-radius:8px; font-weight:bold; font-size:1.1em; cursor: pointer;">🗑️ 清除所有歷屆戰績</button>
         </div>
-    </div>
-</div>
+    </div> <!-- view-settings 閉合 -->
+</div> <!-- container 閉合 -->
 
-<!-- 彈窗區 -->
+<!-- 彈窗區 (保持與 container 同層) -->
 <div id="zhuiModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇被追玩家</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家被追：</span><select id="zhuiPlayerId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px;"></select></div><div class="btn-row"><button onclick="closeModal('zhuiModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: #ffe0b2; color: #000;" onclick="submitZhui()">確認</button></div></div></div>
 <div id="emojiModal" class="modal-overlay"><div class="modal-content emoji-modal-content"><div class="emoji-modal-header"><h3>選擇動物</h3><button class="btn-close-circle" onclick="closeModal('emojiModal')">×</button></div><div class="emoji-grid-container" id="emojiGridBox"></div></div></div>
 <div id="winModal" class="modal-overlay"><div class="modal-content"><h3>🀄 食糊結算</h3><div class="settings-item"><span>勝出者:</span> <b id="winPlayerName" style="font-size: 1.2em; color: var(--primary);"></b></div><div class="settings-item"><span>類型:</span><select id="winType"><option value="discard">出銃</option><option value="self">自摸</option></select></div><div id="loserSelectRow" class="settings-item"><span>出銃者:</span> <select id="loserId"></select></div><div id="horseCountRow" class="settings-item"><span>獎馬數量:</span> <div class="stepper"><button type="button" onclick="adjustHorse(-1)">−</button><span id="horseCountDisplay">0</span><button type="button" onclick="adjustHorse(1)">＋</button></div><input type="hidden" id="horseCount" value="0"></div><div class="settings-item"><span>是否槓爆?</span> <input type="checkbox" id="isKongExp"></div><div class="btn-row"><button onclick="closeModal('winModal')" style="background: #e0e0e0; color: #333;">取消</button><button class="btn-win" style="color: #000;" onclick="submitWin()">確認結算</button></div></div></div>
 <div id="kongModal" class="modal-overlay"><div class="modal-content"><h3>🀄 開槓選擇</h3><div class="settings-item" style="justify-content: center; background: transparent; padding: 5px;"><b id="kongPlayerName" style="font-size: 1.3em; color: var(--primary);"></b></div><div style="margin-top: 15px;"><button class="btn-kong-opt" onclick="submitKong('an')">暗槓</button><button class="btn-kong-opt" onclick="submitKong('ming')">明槓</button><button class="btn-kong-opt" onclick="submitKong('jia')">加槓</button></div><div class="btn-row"><button onclick="closeModal('kongModal')" style="background: #e0e0e0; color: #333;">取消</button></div></div></div>
 <div id="mingModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇明槓出銃者</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家打出俾 <b id="mingPlayerName" style="color:var(--primary); font-size:1.1em;"></b> 槓：</span><select id="mingLoserId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px; background: white;"></select></div><div class="btn-row"><button onclick="closeModal('mingModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: var(--primary); color: white;" onclick="submitMing()">確認</button></div></div></div>
+
+<!-- 底部導航 Menu Bar -->
+<nav>
+    <div onclick="showView('game')" id="nav-game" class="active">📊<br>計分</div>
+    <div onclick="showView('shuffle')" id="nav-shuffle">🀄<br>執位</div>
+    <div onclick="showView('history')" id="nav-history">📜<br>紀錄</div>
+    <div onclick="showView('sessions')" id="nav-sessions">🏆<br>戰績</div>
+    <div onclick="showView('settings')" id="nav-settings">⚙<br>設定</div>
+</nav>
 
 <script>
     // 🔴 雲端連線設定（連線失敗亦能 100% 降級為本地運行，不影響單機）
@@ -496,25 +500,6 @@
         document.getElementById('set-voice').checked = config.voiceEnabled;
     }
 
-    function exportData() {
-        const allData = { players, config, sessions, history };
-        const code = btoa(unescape(encodeURIComponent(JSON.stringify(allData))));
-        navigator.clipboard.writeText(code).then(() => alert("✅ 同步代碼已複製！請去 WhatsApp 貼上俾朋友。"));
-    }
-
-    function importData() {
-        const code = document.getElementById('syncDataInput').value.trim();
-        if(!code) return alert("請先貼上代碼。");
-        try {
-            const decodedData = JSON.parse(decodeURIComponent(escape(atob(code))));
-            if(confirm("⚠ 匯入代碼會覆蓋你部機而家嘅所有紀錄，確定嗎？")) {
-                players = decodedData.players; config = decodedData.config;
-                sessions = decodedData.sessions; history = decodedData.history;
-                saveData(); location.reload();
-            }
-        } catch(e) { alert("❌ 代碼錯誤。"); }
-    }
-
     function startShuffle() {
         shuffledWinds = ['東', '南', '西', '北'].sort(() => Math.random() - 0.5); pickingIndex = 0; isShuffling = true;
         document.querySelectorAll('.mahjong-tile').forEach(t => { t.innerText='🀫'; t.classList.remove('revealed'); });
@@ -586,7 +571,7 @@
         const statUpdates = [{id: winner.id, type: 'kong', val: 1}];
         applyChange(change, `${winner.emoji} ${winner.name} 明槓 (${loser.emoji} ${loser.name} 打出)`, statUpdates);
         speak(`銀牙！${winner.name}，明槓`); closeModal('mingModal');
-    };
+    }
 
     function handleEvent(pid, type) {
         const change = {}; let statUpdates = []; const p = players.find(x => x.id === pid); let amount = 0, name = "", speechText = "";
@@ -711,7 +696,6 @@
         const titles = { winKing: getKings('win'), selfDrawKing: getKings('selfDraw'), discardKing: getKings('discard'), kongKing: getKings('kong') };
         sessions.push({ date: `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${(now.getMinutes()<10?'0':'')+now.getMinutes()}`, results: players.map(p => ({ name: p.name, emoji: p.emoji, score: p.score })), titles: titles });
         
-        // 結算後重置本地與雲端分數
         players.forEach(p => { p.score = 0; p.stats = { win: 0, selfDraw: 0, discard: 0, kong: 0 }; }); 
         history = []; 
         saveData(); 
