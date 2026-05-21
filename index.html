@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專業跑馬仔計分器 V9.1</title>
+    <title>專業跑馬仔計分器 V9.2</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1b5e20">
@@ -67,7 +67,6 @@
         .view { display: none; }
         .view.active { display: block; }
 
-        /* 縮減行距與卡片邊距，優化 Android 高度適配 */
         .cross-layout { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 10px; margin-top: 5px; }
         .cross-row { display: flex; justify-content: center; gap: 8px; width: 100%; }
         .card-wrapper { width: 49%; max-width: 240px; }
@@ -76,15 +75,20 @@
             background: white; border-radius: 12px; padding: 10px; text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
             height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.3s ease-in-out;
         }
 
-        .player-name { font-weight: bold; font-size: 1.4em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; transition: all 0.2s; }
-        .player-score { font-size: 3.2em; font-weight: bold; margin: 4px 0; line-height: 1; transition: all 0.2s; }
+        .player-name { font-weight: bold; font-size: 1.4em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; transition: all 0.3s; }
+        
+        /* ⭐️ 基礎操作模式字體 (加入自動縮放防破版) */
+        .player-score { font-size: 3.2em; font-weight: bold; margin: 4px 0; line-height: 1; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .score-pos { color: var(--win); }
         .score-neg { color: var(--lose); }
+        
+        .player-score.score-len-4 { font-size: 2.7em; } /* 如 +260 */
+        .player-score.score-len-5 { font-size: 2.2em; } /* 如 +1050 */
 
-        .main-actions { display: flex; gap: 8px; margin-top: 10px; transition: all 0.2s; }
+        .main-actions { display: flex; gap: 8px; margin-top: 10px; transition: all 0.3s; opacity: 1; }
         .sq-btn {
             flex: 1; aspect-ratio: 1; border-radius: 12px; font-size: 1.4em; font-weight: bold;
             display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
@@ -94,22 +98,15 @@
         .btn-kong { background: #e8f5e9; color: var(--primary); border: 2px solid var(--primary); }
         .btn-win { background: var(--accent); color: #000; border: 2px solid #fbc02d; }
         
-        /* 網上連線「純分數看板」專用樣式 */
-        .score-mode-active .main-actions {
-            display: none !important;
-        }
-        .score-mode-active .player-card {
-            padding: 30px 10px;
-            min-height: 180px;
-        }
-        .score-mode-active .player-name {
-            font-size: 1.6em;
-            color: #111;
-        }
-        /* 基礎樣式移除寫死的 5.2em，改由 JS 動態注入計算後的最佳大小 */
-        .score-mode-active .player-score {
-            margin: 15px 0;
-        }
+        /* ⭐️ 網上連線「純分數看板」專用極限放大 CSS */
+        .score-mode-active .main-actions { display: none !important; }
+        .score-mode-active .player-card { padding: 30px 10px; min-height: 180px; }
+        .score-mode-active .player-name { font-size: 1.6em; color: #111; }
+        
+        .score-mode-active .player-score { margin: 20px 0; font-size: 5.8em; } /* 1~2個字元：巨無霸 */
+        .score-mode-active .player-score.score-len-3 { font-size: 5.2em; }     /* 3個字元 (如 +30) */
+        .score-mode-active .player-score.score-len-4 { font-size: 4.4em; }     /* 4個字元 (如 +260) */
+        .score-mode-active .player-score.score-len-5 { font-size: 3.5em; }     /* 5個字元以上 */
 
         .small-btn { width: 100%; padding: 6px; font-size: 0.85em; border-radius: 6px; border: none; font-weight: bold; }
         .btn-danger { background: #ffebee; color: var(--lose); }
@@ -266,7 +263,7 @@
         <div class="danger-zone">
             <h4>⚠ 危險區域</h4>
             <button onclick="resetScores()" class="btn-danger" style="width: 100%; padding: 15px; border:none; border-radius:8px; margin-bottom:10px; font-weight:bold; font-size:1.1em; cursor: pointer;">🧨 清空所有分數 (開新局)</button>
-            <clear-sessions onclick="clearSessions()" class="btn-danger" style="width: 100%; padding: 15px; border: 1px solid #d32f2f; background: white; border-radius:8px; font-weight:bold; font-size:1.1em; cursor: pointer; display: block; text-align: center; margin: 0 auto 30px auto; box-sizing: border-box;">🗑️ 清除所有歷屆戰績</clear-sessions>
+            <button onclick="clearSessions()" class="btn-danger" style="width: 100%; padding: 15px; border: 1px solid #d32f2f; background: white; border-radius:8px; font-weight:bold; font-size:1.1em; cursor: pointer;">🗑️ 清除所有歷屆戰績</button>
         </div>
     </div> <!-- view-settings 閉合 -->
 </div> <!-- container 閉合 -->
@@ -288,7 +285,7 @@
 </nav>
 
 <script>
-    // 🔴 雲端連線設定：此處無任何 API Key，100% 確保原始碼安全！
+    // 🔴 雲端連線設定
     let firebaseConfig = {};
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'hostinger-mj-app';
 
@@ -318,24 +315,15 @@
     let currentWinnerId = null, currentKongPlayerId = null, currentEmojiPlayerId = null; 
     let shuffledWinds = [], pickingIndex = 0, isShuffling = false;
 
-    // 解決 Emoji 與中文字元相容性問題的無損 Base64 編解碼器
     function utf8ToBase64(str) {
-        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-            return String.fromCharCode('0x' + p1);
-        }));
+        return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) { return String.fromCharCode('0x' + p1); }));
     }
 
     function base64ToUtf8(str) {
-        try {
-            return decodeURIComponent(atob(str).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-        } catch(e) {
-            return null;
-        }
+        try { return decodeURIComponent(atob(str).split('').map(function(c) { return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2); }).join('')); } 
+        catch(e) { return null; }
     }
 
-    // 強效相容性剪貼簿複製
     function copyToClipboard(text) {
         const textArea = document.createElement("textarea");
         textArea.value = text;
@@ -347,14 +335,8 @@
             const successful = document.execCommand('copy');
             document.body.removeChild(textArea);
             if (successful) return true;
-        } catch (err) {
-            document.body.removeChild(textArea);
-        }
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text);
-            return true;
-        }
+        } catch (err) { document.body.removeChild(textArea); }
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text); return true; }
         return false;
     }
 
@@ -499,7 +481,7 @@
         utterance.rate = 1.05; window.speechSynthesis.speak(utterance);
     }
 
-    // --- 觀戰/純分數看板模式切換邏輯 ---
+    // --- ⭐️ 觀戰/純分數看板模式切換邏輯 ---
     function toggleScoreMode() {
         scoreMode = !scoreMode;
         localStorage.setItem('mj_score_mode', scoreMode);
@@ -529,22 +511,15 @@
             if(!p) return '';
             const scoreStr = `${p.score > 0 ? '+' : ''}${p.score}`;
             
-            // ⭐️ 動態字元長度字體自適應演算法
-            let scoreboardFontSize = "5.2em"; 
-            if (scoreStr.length === 3) {
-                scoreboardFontSize = "4.6em"; 
-            } else if (scoreStr.length === 4) {
-                scoreboardFontSize = "3.6em"; 
-            } else if (scoreStr.length >= 5) {
-                scoreboardFontSize = "2.8em"; 
-            }
+            // 計算字串長度，加上對應的長度 class 讓 CSS 處理自動縮放
+            let lenClass = `score-len-${scoreStr.length}`;
+            if (scoreStr.length >= 5) lenClass = 'score-len-5';
 
             return `
             <div class="card-wrapper">
                 <div class="player-card">
                     <div class="player-name">${p.emoji} ${p.wind} - ${p.name}</div>
-                    <div class="player-score ${p.score >= 0 ? 'score-pos' : 'score-neg'}" 
-                         style="${scoreMode ? `font-size: ${scoreboardFontSize} !important;` : ''}">
+                    <div class="player-score ${p.score >= 0 ? 'score-pos' : 'score-neg'} ${lenClass}">
                         ${scoreStr}
                     </div>
                     <div class="main-actions">
@@ -557,7 +532,7 @@
         const getP = (w) => players.find(p => p.wind === w);
         grid.innerHTML = `<div class="cross-row">${makeCard(getP('北'))}</div><div class="cross-row">${makeCard(getP('西'))}${makeCard(getP('東'))}</div><div class="cross-row">${makeCard(getP('南'))}</div>`;
         
-        // 渲染後重新刷新樣式
+        // 渲染後重新確認樣式
         updateScoreModeUI();
     }
 
