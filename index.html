@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專業跑馬仔計分器 V9.2</title>
+    <title>專業跑馬仔計分器 V9.3</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1b5e20">
@@ -67,6 +67,7 @@
         .view { display: none; }
         .view.active { display: block; }
 
+        /* 縮減行距與卡片邊距，優化 Android 高度適配 */
         .cross-layout { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 10px; margin-top: 5px; }
         .cross-row { display: flex; justify-content: center; gap: 8px; width: 100%; }
         .card-wrapper { width: 49%; max-width: 240px; }
@@ -268,7 +269,7 @@
     </div> <!-- view-settings 閉合 -->
 </div> <!-- container 閉合 -->
 
-<!-- 彈窗區 (保持與 container 同層) -->
+<!-- 彈窗區 -->
 <div id="zhuiModal" class="modal-overlay"><div class="modal-content"><h3>😰 選擇被追玩家</h3><div class="settings-item" style="flex-direction: column; align-items: stretch;"><span style="margin-bottom: 10px;">請選擇邊位玩家被追：</span><select id="zhuiPlayerId" style="width: 100%; font-size: 1.2em; padding: 12px; text-align: center; border: 1px solid #ddd; border-radius: 8px;"></select></div><div class="btn-row"><button onclick="closeModal('zhuiModal')" style="background: #e0e0e0; color: #333;">取消</button><button style="background: #ffe0b2; color: #000;" onclick="submitZhui()">確認</button></div></div></div>
 <div id="emojiModal" class="modal-overlay"><div class="modal-content emoji-modal-content"><div class="emoji-modal-header"><h3>選擇動物</h3><button class="btn-close-circle" onclick="closeModal('emojiModal')">×</button></div><div class="emoji-grid-container" id="emojiGridBox"></div></div></div>
 <div id="winModal" class="modal-overlay"><div class="modal-content"><h3>🀄 食糊結算</h3><div class="settings-item"><span>勝出者:</span> <b id="winPlayerName" style="font-size: 1.2em; color: var(--primary);"></b></div><div class="settings-item"><span>類型:</span><select id="winType"><option value="discard">出銃</option><option value="self">自摸</option></select></div><div id="loserSelectRow" class="settings-item"><span>出銃者:</span> <select id="loserId"></select></div><div id="horseCountRow" class="settings-item"><span>獎馬數量:</span> <div class="stepper"><button type="button" onclick="adjustHorse(-1)">−</button><span id="horseCountDisplay">0</span><button type="button" onclick="adjustHorse(1)">＋</button></div><input type="hidden" id="horseCount" value="0"></div><div class="settings-item"><span>是否槓爆?</span> <input type="checkbox" id="isKongExp"></div><div class="btn-row"><button onclick="closeModal('winModal')" style="background: #e0e0e0; color: #333;">取消</button><button class="btn-win" style="color: #000;" onclick="submitWin()">確認結算</button></div></div></div>
@@ -511,7 +512,7 @@
             if(!p) return '';
             const scoreStr = `${p.score > 0 ? '+' : ''}${p.score}`;
             
-            // 計算字串長度，加上對應的長度 class 讓 CSS 處理自動縮放
+            // ⭐️ 動態字元長度字體自適應演算法
             let lenClass = `score-len-${scoreStr.length}`;
             if (scoreStr.length >= 5) lenClass = 'score-len-5';
 
@@ -824,7 +825,15 @@
     async function init() {
         renderDashboard();
         renderSettings();
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+        
+        try {
+            if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+                navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registration failed:', e));
+            }
+        } catch(e) {
+            console.warn('Service worker not supported in this environment.');
+        }
+
         setTimeout(loadVoices, 500); 
 
         // 1. 優先嘗試讀取 Canvas 預覽環境變數
