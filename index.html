@@ -633,8 +633,7 @@
             document.getElementById('shuffleStatus').innerText = `執位完成！`; 
             setTimeout(() => { 
                 isShuffling = false; 
-                players.forEach(p => { p.score = 0; p.stats = { win: 0, selfDraw: 0, discard: 0, kong: 0 }; }); 
-                history = []; saveData(); renderDashboard();
+                saveData(); renderDashboard();
                 showView('game'); 
             }, 1000); 
         }
